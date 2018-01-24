@@ -6,14 +6,78 @@ var app_id = ""
 var table_name = "Partners";
 
 
-function onOpen() {
+/**
+ * Runs when the form is open for edit by creator/collaborator.
+ *
+ * @param {object} e The event parameter for a simple onOpen trigger. To
+ *     determine which authorization mode (ScriptApp.AuthMode) the trigger is
+ *     running in, inspect e.authMode.
+ */
+function onOpen(e) {
   // disable edits to submissions until we implement update entry to airtable (TODO)
   var form = FormApp.getActiveForm();
   form.setAllowResponseEdits(false);
 
+  // add a custom menu to the active form to show the add-on sidebar.
+  FormApp.getUi()
+      .createAddonMenu()
+      .addItem('Show Sidebar', 'showSidebar')
+      .addToUi();
+}
+
+/**
+ * Runs when the add-on is installed.
+ *
+ * @param {object} e The event parameter for a simple onInstall trigger. To
+ *     determine which authorization mode (ScriptApp.AuthMode) the trigger is
+ *     running in, inspect e.authMode. (In practice, onInstall triggers always
+ *     run in AuthMode.FULL, but onOpen triggers may be AuthMode.LIMITED or
+ *     AuthMode.NONE).
+ */
+function onInstall(e) {
+  onOpen(e);
+}
+
+/**
+ * Opens a sidebar in the form containing the add-on's user interface for
+ * configuring the notifications this add-on will produce.
+ */
+function showSidebar() {
+  var ui = HtmlService.createHtmlOutputFromFile('Sidebar')
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME)
+      .setTitle('Post to Airtable');
+  FormApp.getUi().showSidebar(ui);
+}
+
+
+/**
+ * Save sidebar settings to this form's Properties, and update the onFormSubmit
+ * trigger as needed.
+ *
+ * @param {Object} settings An Object containing key-value
+ *      pairs to store.
+ */
+function saveSettings(settings) {
+  PropertiesService.getDocumentProperties().setProperties(settings);
   adjustFormSubmitTrigger();
 }
 
+/**
+ * Queries the User Properties to populate the sidebar UI elements.
+ *
+ * @return {Object} A collection of Property values used to fill the
+ *        configuration sidebar.
+ */
+function getSettings() {
+  var settings = PropertiesService.getDocumentProperties().getProperties();
+
+  // Use a default email if the creator email hasn't been provided yet.
+  if (!settings.creatorEmail) {
+    settings.creatorEmail = Session.getEffectiveUser().getEmail();
+  }
+  Logger.log(settings.creatorEmail);
+  return settings;
+}
 
 function adjustFormSubmitTrigger() {
   var form = FormApp.getActiveForm(); 

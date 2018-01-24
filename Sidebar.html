@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+  </head>
+  <body>
+    <form>
+      <label for="api-key">Airtable API key with Editor permissions</label>
+      <input type="text" id="api-key"/>
+      <button class="action" id="save-settings">Save</button>
+    </form>
+    
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
+    </script>
+    <script>
+      /**
+       * On document load, assign required handlers to each element,
+       * and attempt to load any saved settings.
+       */
+       $(function() {
+         $('#save-settings').click(saveSettingsToServer);
+         google.script.run
+           .withSuccessHandler(loadSettings)
+//           .withFailureHandler(showStatus)
+//           .withUserObject($('#button-bar').get())
+           .getSettings();
+         });
+
+     /**
+       * Callback function that populates the notification options using
+       * previously saved values.
+       *
+       * @param {Object} settings The saved settings from the client.
+       */
+      function loadSettings(settings) {
+//        $('#creator-email').val(settings.creatorEmail);
+        $('#api-key').val(settings.apiKey);      
+      }
+        
+      /**
+       * Collects the options specified in the add-on sidebar and sends them to
+       * be saved as Properties on the server.
+       */
+      function saveSettingsToServer() {
+        this.disabled = true;
+        
+        var settings = { 
+          'apiKey': $("#api-key").val().trim() 
+        };
+        
+        // Save the settings on the server
+        google.script.run
+            .withSuccessHandler(
+              function(msg, element) {
+                element.disabled = false;
+              })
+            .withFailureHandler(
+              function(msg, element) {
+                element.disabled = false;
+              })
+            .withUserObject(this)
+            .saveSettings(settings);
+      }             
+     </script>
+  </body>
+</html>
+
+
