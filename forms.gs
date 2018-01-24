@@ -1,11 +1,3 @@
-// User Credentials from Airtable
-// https://support.airtable.com/hc/en-us/articles/219046777-How-do-I-get-my-API-key-
-// https://community.airtable.com/t/what-is-the-app-id-where-do-i-find-it/2984/2
-var api_key = ""; //editor key
-var app_id = ""
-var table_name = "Partners";
-
-
 /**
  * Runs when the form is open for edit by creator/collaborator.
  *
@@ -58,7 +50,7 @@ function showSidebar() {
  *      pairs to store.
  */
 function saveSettings(settings) {
-  PropertiesService.getDocumentProperties().setProperties(settings);
+  PropertiesService.getScriptProperties().setProperties(settings);
   adjustFormSubmitTrigger();
 }
 
@@ -69,13 +61,13 @@ function saveSettings(settings) {
  *        configuration sidebar.
  */
 function getSettings() {
-  var settings = PropertiesService.getDocumentProperties().getProperties();
+  var settings = PropertiesService.getScriptProperties().getProperties();
 
   // Use a default email if the creator email hasn't been provided yet.
   if (!settings.creatorEmail) {
     settings.creatorEmail = Session.getEffectiveUser().getEmail();
   }
-  Logger.log(settings.creatorEmail);
+  Logger.log(settings);
   return settings;
 }
 
@@ -119,8 +111,11 @@ function respondToFormSubmit(e) { // trigger from spreadsheet
   
 
 function postToAirtable(e) {
+  var settings = getSettings();
+  
   // Airtable API reference:
-  // https://airtable.com/appIXjc654oNlG2GC/api/docs#curl/table:partners:create
+  var apiDocUrl = 'https://airtable.com/' + settings.appId + '/api/docs#curl/table:'+settings.tableName+':create';
+
   var data = { "fields": {
 //   'Last Name': 'Zhai',
    'First Name': e.namedValues['Name'][0],
@@ -132,13 +127,15 @@ function postToAirtable(e) {
     'muteHttpExceptions': true,
     'method': 'POST',
     'headers': {
-      'Authorization': "Bearer " + api_key, 
+      'Authorization': "Bearer " + settings.apiKey, 
       'Content-Type': 'application/json'
     },
     // Convert the JavaScript object to a JSON string.
     'payload' : JSON.stringify(data)
   };
   
-  var response = UrlFetchApp.fetch('https://api.airtable.com/v0/'+app_id+'/'+table_name, options);
+  var tableUrl = 'https://api.airtable.com/v0/'+settings.appId+'/'+settings.tableName;
+  var response = UrlFetchApp.fetch(tableUrl, options);
+  Logger.log(tableUrl);
   Logger.log(response.getContentText());
 }

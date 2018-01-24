@@ -5,8 +5,13 @@
   </head>
   <body>
     <form>
-      <label for="api-key">Airtable API key with Editor permissions</label>
+      <label for="table-name">Destination table name</label>
+      <input type="text" id="table-name"/>
+      <label for="app-id">Base App Id</label>
+      <input type="text" id="app-id"/>
+      <label for="api-key">API key with Editor permissions</label>
       <input type="text" id="api-key"/>
+      
       <button class="action" id="save-settings">Save</button>
     </form>
     
@@ -34,6 +39,8 @@
        */
       function loadSettings(settings) {
 //        $('#creator-email').val(settings.creatorEmail);
+        $('#table-name').val(settings.tableName);      
+        $('#app-id').val(settings.appId);      
         $('#api-key').val(settings.apiKey);      
       }
         
@@ -45,6 +52,8 @@
         this.disabled = true;
         
         var settings = { 
+          'tableName': $("#table-name").val().trim(),
+          'appId': $("#app-id").val().trim(),
           'apiKey': $("#api-key").val().trim() 
         };
         
