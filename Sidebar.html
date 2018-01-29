@@ -2,19 +2,44 @@
 <html>
   <head>
     <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <!-- The CSS package above applies Google styling to buttons and other elements. -->
+    <style>
+    .sidebar {
+      bottom: 54px;
+      top: 0;
+    }
+    
+    .width-100 {
+      width: 100%;
+      box-sizing: border-box;
+      -webkit-box-sizing : border-box;‌
+      -moz-box-sizing : border-box;
+    }
+    
+    label {
+      font-weight: bold;
+    }
+    
+    input[type=text] {
+      margin-bottom: 10px;
+    }
+    </style>
   </head>
   <body>
-    <form>
-      <label for="table-name">Destination table name</label>
-      <input type="text" id="table-name"/>
-      <label for="app-id">Base App Id</label>
-      <input type="text" id="app-id"/>
-      <label for="api-key">API key with Editor permissions</label>
-      <input type="text" id="api-key"/>
-      
-      <button class="action" id="save-settings">Save</button>
-    </form>
-    
+    <div class="sidebar">
+      <form>
+        <div class="block form-group" id="airtable-destination-settings">
+          <label for="api-key">API Key (Editor permissions)</label>
+          <input type="text" class="width-100" id="api-key"/>
+          <label for="app-id">App Id</label>
+          <input type="text" class="width-100" id="app-id"/>
+          <label for="table-name">Table Name</label>
+          <input type="text" class="width-100" id="table-name"/>
+        </div>  
+        <button class="action" id="save-settings">Link</button>
+      </form>
+    </div>    
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
     </script>
     <script>
