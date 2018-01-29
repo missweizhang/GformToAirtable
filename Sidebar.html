@@ -42,16 +42,29 @@
     </div>    
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
     </script>
+    <script type="text/javascript" src="https://rawgit.com/notifyjs/notifyjs/master/dist/notify.js">
+    </script>
     <script>
       /**
-       * On document load, assign required handlers to each element,
-       * and attempt to load any saved settings.
+       * On document load, 
        */
        $(function() {
+         // notify.js default options
+         $.notify.defaults( 
+           { 
+             elementPosition: 'bottom left',
+             globalPosition: 'bottom left',
+             className: 'success',
+           } 
+         );         
+       
+         // assign required handlers to each element, and attempt to load any saved settings.
          $('#save-settings').click(saveSettingsToServer);
          google.script.run
            .withSuccessHandler(loadSettings)
-//           .withFailureHandler(showStatus)
+           .withFailureHandler(function() {
+             $.notify("cannot load settings", "error");
+           })
 //           .withUserObject($('#button-bar').get())
            .getSettings();
          });
@@ -87,10 +100,12 @@
             .withSuccessHandler(
               function(msg, element) {
                 element.disabled = false;
+                $.notify("settings saved");
               })
             .withFailureHandler(
               function(msg, element) {
                 element.disabled = false;
+                $.notify("settings not saved","error");
               })
             .withUserObject(this)
             .saveSettings(settings);
