@@ -17,6 +17,18 @@
       -moz-box-sizing : border-box;
     }
     
+    .block {
+      background-color: #eee;
+      border-color: #eee;
+      border-width: 5px;
+      border-style: solid;
+      margin-top: 10px;
+    }
+    
+    p {
+      font-weight: bold;
+    }
+    
     label {
       font-weight: bold;
     }
@@ -38,6 +50,8 @@
           <input type="text" class="width-100" id="table-name"/>
         </div>  
         <button class="action" id="save-settings">Link</button>
+        <div class="block" id="airtable-destination-url">
+        </div>
       </form>
     </div>    
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
@@ -76,12 +90,25 @@
        * @param {Object} settings The saved settings from the client.
        */
       function loadSettings(settings) {
-//        $('#creator-email').val(settings.creatorEmail);
         $('#table-name').val(settings.tableName);      
         $('#app-id').val(settings.appId);      
-        $('#api-key').val(settings.apiKey);      
-      }
+        $('#api-key').val(settings.apiKey);
         
+        // display all existing links to airtable bases
+        var div = $('#airtable-destination-url');
+        if (settings.hasOwnProperty('links')) {
+          var links = JSON.parse(settings.links);
+          if (links.length > 0) {
+            div.append($('<p>').text('Linked Airtable base(s):'));
+            for (var i in links) {
+              var url = 'https://www.airtable.com/'+links[i].appId;
+              div.append($('<a>').attr('href',url).attr('id','link').text(url));
+              div.append('<br/>');
+            }
+          }
+        }
+      }
+      
       /**
        * Collects the options specified in the add-on sidebar and sends them to
        * be saved as Properties on the server.
@@ -100,12 +127,23 @@
             .withSuccessHandler(
               function(msg, element) {
                 element.disabled = false;
-                $.notify("settings saved");
+                $.notify("Settings saved");
+                
+                // display only new link to airtable base
+                var div = $('#airtable-destination-url');
+                div.empty();
+                div.append($('<p>').text('A copy of future responses will be saved to the Airtable base:')
+                                   .css('color', 'Maroon'));
+                div.append($('<a>').attr('href',msg)
+                                   .attr('id','link')
+                                   .text(msg));
               })
             .withFailureHandler(
               function(msg, element) {
                 element.disabled = false;
-                $.notify("settings not saved","error");
+                div.append($('<p>').text("Error: "+msg)
+                                   .css('color', 'Red'));
+                $.notify(msg,"error");
               })
             .withUserObject(this)
             .saveSettings(settings);

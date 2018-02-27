@@ -48,10 +48,47 @@ function showSidebar() {
  *
  * @param {Object} settings An Object containing key-value
  *      pairs to store.
+ * @return {String} A url to airtable base.
  */
 function saveSettings(settings) {
-  PropertiesService.getScriptProperties().setProperties(settings);
+  // input validation
+  if (settings.apiKey.indexOf("key") != 0 ) {
+    throw "Settings not saved: invalid API key";
+  }
+  if (settings.appId.indexOf("app") != 0 ) {
+    throw "Settings not saved: invalid app ID";
+  }
+  if (!settings.tableName ) {
+    throw "Settings not saved: empty table name";
+  }
+  
+  // save properties for display
+  var properties = PropertiesService.getScriptProperties();
+  properties.setProperties(settings);
+  
+  // save all linked bases
+  var linksArray = [];
+  var links = properties.getProperty('links');
+  if (links) {  // get saved links
+    linksArray = JSON.parse(links);
+  }
+  
+  if (linksArray.filter(
+    function(link) {
+      return link.appId == settings.appId;
+    }).length == 0)
+  {  // add link if not saved already
+    linksArray.push(settings);
+  }
+  properties.setProperty('links', JSON.stringify(linksArray));
+  Logger.log(properties.getProperties());
+  
+  // add trigger upon form submit
   adjustFormSubmitTrigger();
+  
+  // url to Airtable base
+  var url = 'https://www.airtable.com/'+settings.appId
+  return url;
 }
 
 /**
@@ -62,12 +99,6 @@ function saveSettings(settings) {
  */
 function getSettings() {
   var settings = PropertiesService.getScriptProperties().getProperties();
-
-  // Use a default email if the creator email hasn't been provided yet.
-  if (!settings.creatorEmail) {
-    settings.creatorEmail = Session.getEffectiveUser().getEmail();
-  }
-  Logger.log(settings);
   return settings;
 }
 
@@ -105,22 +136,30 @@ function respondToFormSubmit(e) { // trigger from spreadsheet
   }
   else {
     Logger.log("new entry: user submitted form");
-    postToAirtable(e);
+    postToAllAirtableBases(e);
   }
 }
   
-
-function postToAirtable(e) {
+function postToAllAirtableBases(e) {
   var settings = getSettings();
   
+  if (!settings.links) { // post to only base saved
+    postToAirtableBase(e, settings);
+  }
+  else {                 // post to all bases
+    var linksArray = JSON.parse(settings.links);
+    for (var i in linksArray) {
+      postToAirtableBase(e, linksArray[i]);
+    }
+  }
+}
+
+// post to each airtable base
+function postToAirtableBase(e, settings) {
   // Airtable API reference:
   var apiDocUrl = 'https://airtable.com/' + settings.appId + '/api/docs#curl/table:'+settings.tableName+':create';
 
-  var data = { "fields": {
-//   'Last Name': 'Zhai',
-   'First Name': e.namedValues['Name'][0],
-//   'Street': "home"
-  } };
+  var data = { "fields":  getData(e)};
   
   // Make a POST request with a JSON payload.
   var options = {
@@ -138,4 +177,10 @@ function postToAirtable(e) {
   var response = UrlFetchApp.fetch(tableUrl, options);
   Logger.log(tableUrl);
   Logger.log(response.getContentText());
+  
+  // return unique id of record created
+  if (response.getContentText().hasOwnProperty("id")) {
+    return response.getContentText().id;
+  }
+  return null;
 }
