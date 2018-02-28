@@ -158,12 +158,15 @@ function postToAllAirtableBases(e) {
   }
 }
 
-// post to each airtable base
-function postToAirtableBase(e, settings) {
+// post to one table within each airtable base
+function postToAirtable(e, tableName, fieldMap, settings) {
+  tableName = tableName || settings.tableName;
+  
   // Airtable API reference:
-  var apiDocUrl = 'https://airtable.com/' + settings.appId + '/api/docs#curl/table:'+settings.tableName+':create';
+  var apiDocUrl = 'https://airtable.com/' +settings.appId+ '/api/docs#curl/table:'+tableName+':create';
 
-  var data = { "fields":  getData(e)};
+  // get data mapped from Google Form's response to Airtable
+  var data = { "fields":  getData(e, fieldMap)};
   
   // Make a POST request with a JSON payload.
   var options = {
@@ -177,7 +180,7 @@ function postToAirtableBase(e, settings) {
     'payload' : JSON.stringify(data)
   };
   
-  var tableUrl = 'https://api.airtable.com/v0/'+settings.appId+'/'+settings.tableName;
+  var tableUrl = 'https://api.airtable.com/v0/'+settings.appId+'/'+tableName;
   var response = UrlFetchApp.fetch(tableUrl, options);
   Logger.log(tableUrl);
   Logger.log(response.getContentText());
@@ -188,3 +191,24 @@ function postToAirtableBase(e, settings) {
   }
   return null;
 }
+
+
+// Post response data to airtable base
+function postToAirtableBase(e, settings) {
+  var student = postToAirtable(e, 'Students', // the 'Students' table
+                               {
+                                 '1885085454': 'First Name',
+                                 '1545334638': 'Grade',
+                                 '1411844809': 'Select Week',
+                                 '503152405':  'Extended Care',
+                               }, settings);
+}
+
+/******* Output from Download Questions webapp: ********/
+// https://script.google.com/macros/s/AKfycbwPSEBYoJvjEKiPN2SnNsvPg2rpA747xuGHYs-wc6NdfemAB_Q/exec
+
+//index,title,description,type,data-item-id
+//0,"Name","",TEXT,1885085454
+//1,"","Grade",MULTIPLE_CHOICE,1545334638
+//2,"Select Week","",CHECKBOX,1411844809
+//3,"Extended Care","",MULTIPLE_CHOICE,503152405
