@@ -104,11 +104,11 @@ function getSettings() {
 
 function adjustFormSubmitTrigger() {
   var form = FormApp.getActiveForm(); 
-  var ss = SpreadsheetApp.openById(form.getDestinationId());
+//  var ss = SpreadsheetApp.openById(form.getDestinationId());
 
   // Create a new trigger if doesn't yet exist
   var handlerFunction = 'respondToFormSubmit';
-  var triggers = ScriptApp.getUserTriggers(ss);
+  var triggers = ScriptApp.getUserTriggers(form);
   var existingTrigger = null;
   for (var i = 0; i < triggers.length; i++) {
     if (triggers[i].getHandlerFunction() == handlerFunction &&
@@ -119,15 +119,19 @@ function adjustFormSubmitTrigger() {
   }
   if (!existingTrigger) {
     var trigger = ScriptApp.newTrigger(handlerFunction)
-      // tie trigger to spreadsheet
-      .forSpreadsheet(ss)
+      // tie trigger to form
+      .forForm(form)
+//      .forSpreadsheet(ss)
       .onFormSubmit()
       .create();
   }
 }
 
+function respondToFormSubmit(e) { // trigger from form
+  postToAllAirtableBases(e);
+}
 
-function respondToFormSubmit(e) { // trigger from spreadsheet
+function respondToFormSubmitForSpreadsheet(e) { // trigger from spreadsheet
   Logger.log(e);
   
   if (e.range.getNotes()[0].join('')) {
@@ -136,7 +140,7 @@ function respondToFormSubmit(e) { // trigger from spreadsheet
   }
   else {
     Logger.log("new entry: user submitted form");
-    postToAllAirtableBases(e);
+    respondToFormSubmit(e);
   }
 }
   
