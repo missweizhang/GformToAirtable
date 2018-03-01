@@ -174,7 +174,10 @@ function getMappedValueToArray(response) {
  */
 function getData(e, fieldMap) {
   var itemResponses = e.response.getItemResponses();
-  var result = { 'Timestamp': e.response.getTimestamp() };
+  var result = { 'Timestamp': e.response.getTimestamp(),
+                 'Email Address': e.source.collectsEmail() ? e.response.getRespondentEmail() 
+                                                           : null
+               };
   
   for (var i in itemResponses) {
     var item = itemResponses[i].getItem();
