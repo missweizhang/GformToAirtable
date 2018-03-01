@@ -14,15 +14,123 @@
  */
 function postToAirtableBase(e, settings) {
   var data = getData(e, expand({ // Students table
-                             '1885085454': 'First Name',
-                             '1545334638': 'Grade',
-                             '1411844809, 1809533127': 'Select Week',
-//                             '1411844809': 'Select Week',
-//                             '1809533127': 'Select Week',
-                             '503152405':  'Extended Care',
-                           }));
+    '1885085454': 'First Name',
+    '1545334638': 'Grade',
+//    '1411844809': 'Select Week',
+//    '1809533127': 'Select Week',
+    '1411844809, 1809533127': {
+      field: 'Select Week',
+      valueMap: { "Option 1 - January": "Option 1",
+                  "Option 2 - February": "Option 2" },
+      getValue: getMappedArrayAsCsvString,
+    },
+//    '503152405': 'Extended Care',
+    '503152405':  {
+      field: 'Extended Care',
+      valueMap: { "Yes for all weeks selected": "Yes",
+                  "No for all weeks selected": "No" },
+      getValue: getMappedValue,
+    }
+  }));
   var student = postToAirtableHandleErrors(data, settings, 'Students');
   Logger.log(student);
+}
+
+/**
+ * Returns mapped response: GForm Checkbox to Airtable Text
+ * Other option saved as handled error in Notes 
+ *
+ * array to string map
+ */
+function getMappedArrayAsCsvString(response) {
+  // response is array
+  if (response && typeof response === 'object' 
+               && response.constructor === Array) {
+    // response includes other option
+    for each (var r in response) {
+      if (!this.valueMap.hasOwnProperty(r)) {
+        // warning: workaround to get handled error
+        return [response]; // return response would give unhandled error, TODO: 
+      }
+    }
+    
+    // response doesn't include other option
+    var result = [];
+    for each (var r in response) {
+      result.push(this.valueMap[r]);
+    }
+    return result.join(", ");
+  }
+  
+  // response is other type of object
+  return response; 
+}
+
+
+/**
+ * Returns mapped response: GForm Checkbox to Airtable Multiple Select
+ * Other option saved as handled error in Notes 
+ *
+ * array to array map
+ */
+function getMappedArray(response) {
+  // response is array
+  if (response && typeof response === 'object' 
+               && response.constructor === Array) {
+    // response includes other option
+    for each (var r in response) {
+      if (!this.valueMap.hasOwnProperty(r)) {
+        // warning: workaround to get handled error
+        return [response]; // return response would give unhandled error, TODO: 
+      }
+    }
+    
+    // response doesn't include other option
+    var result = [];
+    for each (var r in response) {
+      result.push(this.valueMap[r]);
+    }
+    return result;
+  }
+  
+  // response is other type of object
+  return response;  
+}
+
+  
+/**
+ * Returns mapped response: GForm Multiple Choice to Airtable Single Select
+ * Other option saved as handled error in Notes 
+ *
+ * string to string map
+ */
+function getMappedValue(response) {
+  // response is string
+  if (typeof response === 'string') {
+    if (this.valueMap.hasOwnProperty(response)) {
+      return this.valueMap[response];
+    }
+
+    // warning: workaround to get handled error
+    return [response]; // return response would give unhandled error TODO: 
+  }
+  
+  // response is other type of object
+  return response;
+}
+
+
+/** deprecated
+ * string to array map
+ * Other option discarded 
+ */
+function getMappedValueToArray(response) {
+  if (this.valueMap.hasOwnProperty(response)) {
+    return [this.valueMap[response]];
+  }
+  // warning: data loss, workaround
+  this.error = [response];
+  return [];   // return [response] would give unhandled error, TODO:
 }
 
 /**
@@ -40,10 +148,18 @@ function getData(e, fieldMap) {
     var item = itemResponses[i].getItem();
     // fieldMap has this question
     if (fieldMap.hasOwnProperty(item.getId())) {
-      var field = fieldMap[item.getId()];
+      var response = itemResponses[i].getResponse();
 
-      // record result
-      result[field] = itemResponses[i].getResponse();
+      var field = fieldMap[item.getId()];
+      if (typeof field === 'string') {
+        // record response as result
+        result[field] = response;
+      }
+      else {
+        // record mapped response as result
+        var getValue = field.getValue.bind(field);
+        result[field.field] = getValue.call(field,response);
+      }
     }
   }
   return result;
