@@ -18,21 +18,36 @@ function postToAirtableBase(e, settings) {
     '1545334638': 'Grade',
 //    '1411844809': 'Select Week',
 //    '1809533127': 'Select Week',
-    '1411844809, 1809533127': {
+    '1411844809, 1809533127': [
+     {
       field: 'Select Week',
-//      valueMap: { "Option 1 - January": "Option 1",
-//                  "Option 2 - February": "Option 2" },
-//      getValue: getMappedArrayAsCsvString,
       regex: /Option [\d]*/,
       getValue: getRegexMatchedArray,
-    },
+     },
+     {
+      field: 'Select Week Original',
+                // map to Airtable Text field
+                // returns csv string
+      getValue: function(response) {
+        // response is array
+        if (isArray(response)) {
+          var csv = response.join(", ");
+          // Week 1: June 18 - June 22: [20/20] seats left, ...
+          // get rid of dates info, returns
+          // Week 1: [20/20] seats left, ...
+          return csv.replace(/:[^,]*:/g, ':');          
+        }
+        return response;
+      }
+     },
+    ],
 //    '503152405': 'Extended Care',
-    '503152405':  {
+    '503152405':  [{
       field: 'Extended Care',
       valueMap: { "Yes for all weeks selected": "Yes",
                   "No for all weeks selected": "No" },
       getValue: getMappedValue,
-    }
+    }]
   }));
   var student = postToAirtableHandleErrors(data, settings, 'Students');
   Logger.log(student);
@@ -45,8 +60,7 @@ function postToAirtableBase(e, settings) {
  */
 function getRegexMatchedArray(response) {
   // response is array
-  if (response && typeof response === 'object' 
-               && response.constructor === Array) {
+  if (isArray(response)) {
     var re = new RegExp(this.regex.source,"g"); // add global flag
     var matches = response.join(", ").match(re);
     return matches;
@@ -64,8 +78,7 @@ function getRegexMatchedArray(response) {
  */
 function getMappedArrayAsCsvString(response) {
   // response is array
-  if (response && typeof response === 'object' 
-               && response.constructor === Array) {
+  if (isArray(response)) {
     // response includes other option
     for each (var r in response) {
       if (!this.valueMap.hasOwnProperty(r)) {
@@ -95,8 +108,7 @@ function getMappedArrayAsCsvString(response) {
  */
 function getMappedArray(response) {
   // response is array
-  if (response && typeof response === 'object' 
-               && response.constructor === Array) {
+  if (isArray(response)) {
     // response includes other option
     for each (var r in response) {
       if (!this.valueMap.hasOwnProperty(r)) {
@@ -171,14 +183,25 @@ function getData(e, fieldMap) {
       var response = itemResponses[i].getResponse();
 
       var field = fieldMap[item.getId()];
+      
+      // map to field as-is
       if (typeof field === 'string') {
         // record response as result
         result[field] = response;
       }
+      // array of mappers to different Airtable fields
+      else if (isArray(field)) { 
+        for each(var f in field) {
+          if (f.hasOwnProperty("field") 
+              && f.hasOwnProperty("getValue")) {
+            // record mapped response as result
+            var getValue = f.getValue.bind(f);
+            result[f.field] = getValue.call(f,response);          
+          }
+        }
+      }
       else {
-        // record mapped response as result
-        var getValue = field.getValue.bind(field);
-        result[field.field] = getValue.call(field,response);
+        // TODO: record unmapped data in Notes field
       }
     }
   }
@@ -315,3 +338,8 @@ function getItemAsType(item) {
       return null;
   }
 }
+
+// Returns if a value is an array
+function isArray (value) {
+  return value && typeof value === 'object' && value.constructor === Array;
+};
