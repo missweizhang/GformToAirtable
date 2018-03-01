@@ -44,8 +44,8 @@ function postToAirtableBase(e, settings) {
 //    '503152405': 'Extended Care',
     '503152405':  [{
       field: 'Extended Care',
-      valueMap: { "Yes for all weeks selected": "Yes",
-                  "No for all weeks selected": "No" },
+      valueMap: { "Yes for all weeks selected": true,
+                  "No for all weeks selected": false },
       getValue: getMappedValue,
     }]
   }));
