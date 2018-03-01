@@ -102,6 +102,22 @@ function getSettings() {
   return settings;
 }
 
+// clear all saved links
+function deleteLinks() {
+  // double check with user
+  var ui = FormApp.getUi();
+  if (ui.alert("Are you sure you want to delete all links to Airtable?", 
+               "This cannot be undone.", 
+               ui.ButtonSet.OK_CANCEL)
+      == ui.Button.CANCEL) {
+    throw "user canceled.";
+  }
+  
+  // delete saved links
+  var properties = PropertiesService.getScriptProperties();
+  properties.deleteProperty('links');
+}
+
 function adjustFormSubmitTrigger() {
   var form = FormApp.getActiveForm(); 
 //  var ss = SpreadsheetApp.openById(form.getDestinationId());
