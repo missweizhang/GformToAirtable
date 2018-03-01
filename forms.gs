@@ -341,25 +341,3 @@ function postToAirtableHandleErrors(dataOrig, settings, tableName) {
   } // tryAgain = false;
   return null;
 }
-
-
-// Post response data to airtable base
-function postToAirtableBase(e, settings) {
-  var data = getData(e, { // Students table
-                             '1885085454': 'First Name',
-                             '1545334638': 'Grade',
-                             '1411844809': 'Select Week',
-                             '503152405':  'Extended Care',
-                           });
-  var student = postToAirtableHandleErrors(data, settings, 'Students');
-  Logger.log(student);
-}
-
-/******* Output from Download Questions webapp: ********/
-// https://script.google.com/macros/s/AKfycbwPSEBYoJvjEKiPN2SnNsvPg2rpA747xuGHYs-wc6NdfemAB_Q/exec
-
-//index,title,description,type,data-item-id
-//0,"Name","",TEXT,1885085454
-//1,"","Grade",MULTIPLE_CHOICE,1545334638
-//2,"Select Week","",CHECKBOX,1411844809
-//3,"Extended Care","",MULTIPLE_CHOICE,503152405

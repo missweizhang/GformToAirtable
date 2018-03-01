@@ -1,3 +1,30 @@
+/******* Output from Download Questions webapp: ********/
+// https://script.google.com/macros/s/AKfycbwPSEBYoJvjEKiPN2SnNsvPg2rpA747xuGHYs-wc6NdfemAB_Q/exec
+
+//index,title,description,type,data-item-id
+//0,"Name","",TEXT,1885085454
+//1,"","Grade",MULTIPLE_CHOICE,1545334638
+//2,"Select Week for 1st grade","",CHECKBOX,1411844809
+//3,"Select Week for 2nd grade","",CHECKBOX,1809533127
+//4,"Extended Care","",MULTIPLE_CHOICE,503152405
+
+
+/**
+ * post response data for camptoons form
+ */
+function postToAirtableBase(e, settings) {
+  var data = getData(e, expand({ // Students table
+                             '1885085454': 'First Name',
+                             '1545334638': 'Grade',
+                             '1411844809, 1809533127': 'Select Week',
+//                             '1411844809': 'Select Week',
+//                             '1809533127': 'Select Week',
+                             '503152405':  'Extended Care',
+                           }));
+  var student = postToAirtableHandleErrors(data, settings, 'Students');
+  Logger.log(student);
+}
+
 /**
  * Get fields data ready to post to Airtable API's create record
  *
@@ -21,6 +48,30 @@ function getData(e, fieldMap) {
   }
   return result;
 }
+
+/**
+ * Expand object with multiple keys pairing to same value
+ * https://stackoverflow.com/questions/14743536/multiple-key-names-same-pair-value
+ *
+ *  var holidays = expand({
+ *     "thanksgiving day, thanksgiving, t-day": {
+ *         someValue : "foo"
+ *     } 
+ * });
+ */
+function expand(obj) {
+    var keys = Object.keys(obj);
+    for (var i = 0; i < keys.length; ++i) {
+        var key = keys[i],
+            subkeys = key.split(/,\s?/),
+            target = obj[key];
+        delete obj[key];
+        subkeys.forEach(function(key) { obj[key] = target; })
+    }
+    return obj;
+}
+
+/**************** Helpers *********************/
 
 // Convert response to csv string if response is String[] or String[][]
 function getResponseAsString(item, response) {
