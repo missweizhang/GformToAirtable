@@ -20,9 +20,11 @@ function postToAirtableBase(e, settings) {
 //    '1809533127': 'Select Week',
     '1411844809, 1809533127': {
       field: 'Select Week',
-      valueMap: { "Option 1 - January": "Option 1",
-                  "Option 2 - February": "Option 2" },
-      getValue: getMappedArrayAsCsvString,
+//      valueMap: { "Option 1 - January": "Option 1",
+//                  "Option 2 - February": "Option 2" },
+//      getValue: getMappedArrayAsCsvString,
+      regex: /Option [\d]*/,
+      getValue: getRegexMatchedArray,
     },
 //    '503152405': 'Extended Care',
     '503152405':  {
@@ -34,6 +36,24 @@ function postToAirtableBase(e, settings) {
   }));
   var student = postToAirtableHandleErrors(data, settings, 'Students');
   Logger.log(student);
+}
+
+/**
+ * Returns mapped response: GForm Checkbox to Airtable Multiple Select
+ *
+ * array to array map
+ */
+function getRegexMatchedArray(response) {
+  // response is array
+  if (response && typeof response === 'object' 
+               && response.constructor === Array) {
+    var re = new RegExp(this.regex.source,"g"); // add global flag
+    var matches = response.join(", ").match(re);
+    return matches;
+  }
+  
+  // response is other type of object
+  return response;
 }
 
 /**
