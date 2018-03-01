@@ -14,18 +14,9 @@ function getData(e, fieldMap) {
     // fieldMap has this question
     if (fieldMap.hasOwnProperty(item.getId())) {
       var field = fieldMap[item.getId()];
-      var response = itemResponses[i].getResponse();
-      
-      if (typeof response != 'string') {
-        response = getResponseAsString(item, response);
-      }
-      if (hasOtherOption(item)) {
-        // set to null if response is an "other" option
-        response = getResponseWithOtherOption(item, response);
-      }  
 
       // record result
-      result[field] = response;
+      result[field] = itemResponses[i].getResponse();
     }
   }
   return result;
@@ -51,13 +42,22 @@ function getResponseAsString(item, response) {
 
 
 /**
- * Get string array of choices available to a form question that supports choices
+ * Get response replacing other option with null
  *
  * @param {string} response
  * @returns {string} if response one of the regular valid choices
  *          {null} if response is an "other" option
+ *          {String[]} if response is an array of strings
  */
 function getResponseWithOtherOption(item, response) {
+  if (typeof response != 'string') { // array
+    var result = [];
+    for each (var r in response) {
+      result.push(getResponseWithOtherOption(item, r));
+    }
+    return result;
+  }
+
   var choices = getChoices(item);
   if (choices && choices.indexOf(response) == -1) {
     // response is an "other" option

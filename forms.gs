@@ -132,8 +132,6 @@ function respondToFormSubmit(e) { // trigger from form
 }
 
 function respondToFormSubmitForSpreadsheet(e) { // trigger from spreadsheet
-  Logger.log(e);
-  
   if (e.range.getNotes()[0].join('')) {
     Logger.log("update entry: user edited submission");
     // TODO: search and update airtable entry using e.namedValues['Timestamp'][0]
@@ -159,15 +157,12 @@ function postToAllAirtableBases(e) {
 }
 
 // post to one table within each airtable base
-function postToAirtable(e, tableName, fieldMap, settings) {
+function postToAirtable(data, settings, tableName) {
   tableName = tableName || settings.tableName;
   
   // Airtable API reference:
   var apiDocUrl = 'https://airtable.com/' +settings.appId+ '/api/docs#curl/table:'+tableName+':create';
 
-  // get data mapped from Google Form's response to Airtable
-  var data = { "fields":  getData(e, fieldMap)};
-  
   // Make a POST request with a JSON payload.
   var options = {
     'muteHttpExceptions': true,
@@ -177,31 +172,171 @@ function postToAirtable(e, tableName, fieldMap, settings) {
       'Content-Type': 'application/json'
     },
     // Convert the JavaScript object to a JSON string.
-    'payload' : JSON.stringify(data)
+    'payload' : JSON.stringify({ "fields": data})
   };
   
   var tableUrl = 'https://api.airtable.com/v0/'+settings.appId+'/'+tableName;
-  var response = UrlFetchApp.fetch(tableUrl, options);
+  var response = JSON.parse(UrlFetchApp.fetch(tableUrl, options).getContentText());
   Logger.log(tableUrl);
-  Logger.log(response.getContentText());
   
-  // return unique id of record created
-  if (response.getContentText().hasOwnProperty("id")) {
-    return response.getContentText().id;
+  // success
+  if (response.hasOwnProperty("id")) {
+    return response;
   }
+  
+  // failure
+  if (response.hasOwnProperty("error")) {
+    throw response.error;
+  }
+
+  // failure?
+  return null;
+}
+
+
+// post to one table within each airtable base and handle errors
+function postToAirtableHandleErrors(dataOrig, settings, tableName) {
+  var data = JSON.parse(JSON.stringify(dataOrig)); // clone object
+  var errata = [];                                 // fields failed to parse to Airtable
+  var hasNotesField = true;                        // assume true until proven otherwise
+  
+  var tryAgain = true;
+  while( tryAgain )  
+  {
+    try {
+      // record errata in Notes field
+      if (hasNotesField && errata.length > 0) {
+        data["Notes"]=JSON.stringify({
+          errata: errata       // list of fields removed and error messages
+        });
+      }
+
+      // post to airtable
+      var response = postToAirtable(data, settings, tableName); 
+      
+      // record errata in Errors table, and mark created record (response) incomplete
+      if (!hasNotesField && errata.length > 0) {
+        var dataForErrors = {
+          "Error Type": "UNKNOWN_FIELD_NAME",
+          "Error Message": "Unknown field name: \"Notes\"",
+          "Errata": JSON.stringify(errata),
+          "Table Name": tableName,
+          "Attempted Data": JSON.stringify(dataOrig),
+          "Status": "partial failure",
+        };
+        
+        // record unique id of partially created record
+        dataForErrors[tableName] = response.id;
+        if (dataOrig.hasOwnProperty("Timestamp")) { 
+          dataForErrors.Timestamp = dataOrig.Timestamp; 
+        }
+        
+        var result = postToAirtableHandleErrors(dataForErrors, settings, 'Errors'); 
+        Logger.log(result);
+      }
+      
+      return response;;      
+    }
+    catch(error) {
+      tryAgain = false;
+
+      // not enough info to create record or log error
+      if(!error.type || error == "NOT_FOUND" ||        // invalid appId
+         error.type == "AUTHENTICATION_REQUIRED" ||    // invalid apiKey
+         error.type == "INVALID_PERMISSIONS")          // require at least Editor permissions
+      {
+        return null;
+      }
+
+      // handleable errors: record in errata and try again with bad data removed
+      if(error.type == "UNKNOWN_FIELD_NAME") {
+        for each (var re in [/Unknown field name: \"(.*)\"/]) {
+          var match = error.message.match(re);
+          if (match) {
+            error.field = match[1];
+            error.value = data[error.field];
+            Logger.log("Field doesn't exist in table, try again without field \""+error.field+"\"");
+            
+            // no Airtable column to record errors
+            if (error.field == "Notes") {
+              hasNotesField = false;
+              Logger.log("Error: "+tableName+" has no \"Notes\" column to save errors from create records.");
+            }
+            else {
+              errata.push(error);
+            }
+            
+            // try again with bad data removed
+            delete data[error.field];
+            tryAgain = true;
+          }
+        }
+      }
+      else if(error.type == "INVALID_VALUE_FOR_COLUMN" ||
+              error.type == "INVALID_MULTIPLE_CHOICE_OPTIONS") 
+      {
+        // field name given
+        for each (var re in [/Field (.*) can not accept value (.*)/,
+                             /Cannot parse value for field (.*)/]) {
+          var match = error.message.match(re);
+          if (match) {
+            error.field = match[1];
+            error.value = data[error.field];
+            Logger.log("Invalid choice, try again without field \""+error.field+"\"");
+            errata.push(error);
+
+            // try again with bad data removed
+            delete data[error.field];
+            tryAgain = true;
+          }
+        }
+        
+        // field name not given
+        for each (var re in [/Unknown choice values: (.*)/,
+                             /(.*) contains duplicate value. Each record ID must appear only once/]) {
+          var match = error.message.match(re);
+          if (match) {
+            Logger.log("Invalid choice \""+match[1]+"\"");
+            // TODO: get field name (key) from invalid value if unique
+          }
+        }
+      }
+      else if (error.type != "TABLE_NOT_FOUND") {
+        // not trying again
+      }
+      
+      // give up handling error and record error in Errors table
+      if (!tryAgain && tableName != 'Errors') {
+        Logger.log("Recording unhandlable error: "+error.type + ", " + error.message);
+        var dataForErrors = {
+          "Error Type": error.type,
+          "Error Message": error.message,
+          "Table Name": tableName,
+          "Attempted Data": JSON.stringify(dataOrig),
+          "Status": "failure"
+        };
+        if (dataOrig.hasOwnProperty("Timestamp")) { 
+          dataForErrors.Timestamp = dataOrig.Timestamp; 
+        }
+        var result = postToAirtableHandleErrors(dataForErrors, settings, 'Errors');
+        Logger.log(result);
+      }
+    }
+  } // tryAgain = false;
   return null;
 }
 
 
 // Post response data to airtable base
 function postToAirtableBase(e, settings) {
-  var student = postToAirtable(e, 'Students', // the 'Students' table
-                               {
-                                 '1885085454': 'First Name',
-                                 '1545334638': 'Grade',
-                                 '1411844809': 'Select Week',
-                                 '503152405':  'Extended Care',
-                               }, settings);
+  var data = getData(e, { // Students table
+                             '1885085454': 'First Name',
+                             '1545334638': 'Grade',
+                             '1411844809': 'Select Week',
+                             '503152405':  'Extended Care',
+                           });
+  var student = postToAirtableHandleErrors(data, settings, 'Students');
+  Logger.log(student);
 }
 
 /******* Output from Download Questions webapp: ********/
