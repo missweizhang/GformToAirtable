@@ -206,7 +206,7 @@ function getMappedArrayAsCsvString(response) {
   if (isArray(response)) {
     // response includes other option
     for each (var r in response) {
-      if (!this.valueMap.hasOwnProperty(r)) {
+      if (this.valueMap && !this.valueMap.hasOwnProperty(r)) {
         // warning: workaround to get handled error
         return [response]; // return response would give unhandled error, TODO: 
       }
@@ -236,7 +236,7 @@ function getMappedArray(response) {
   if (isArray(response)) {
     // response includes other option
     for each (var r in response) {
-      if (!this.valueMap.hasOwnProperty(r)) {
+      if (this.valueMap && !this.valueMap.hasOwnProperty(r)) {
         // warning: workaround to get handled error
         return [response]; // return response would give unhandled error, TODO: 
       }
@@ -264,7 +264,7 @@ function getMappedArray(response) {
 function getMappedValue(response) {
   // response is string
   if (typeof response === 'string') {
-    if (this.valueMap.hasOwnProperty(response)) {
+    if (this.valueMap && this.valueMap.hasOwnProperty(response)) {
       return this.valueMap[response];
     }
 
@@ -282,7 +282,7 @@ function getMappedValue(response) {
  * Other option discarded 
  */
 function getMappedValueToArray(response) {
-  if (this.valueMap.hasOwnProperty(response)) {
+  if (this.valueMap && this.valueMap.hasOwnProperty(response)) {
     return [this.valueMap[response]];
   }
   // warning: data loss, workaround
@@ -308,7 +308,7 @@ function getData(e, fieldMap) {
   for (var i in itemResponses) {
     var item = itemResponses[i].getItem();
     // fieldMap has this question
-    if (fieldMap.hasOwnProperty(item.getId())) {
+    if (fieldMap && fieldMap.hasOwnProperty(item.getId())) {
       var response = itemResponses[i].getResponse();
 
       var field = fieldMap[item.getId()];
