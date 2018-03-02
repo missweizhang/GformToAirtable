@@ -176,6 +176,16 @@ function postToAirtableBase(e, settings) {
   }));
   var student = postToAirtableHandleErrors(data, settings, 'Students');
   Logger.log(student);
+  
+  // Enrollments table
+  if( student && student.hasOwnProperty("id")) {
+    data.Students = student.id;
+    for each( var week in data['Select Week']) {
+      data["Week"] = week;
+      var enrollment = postToAirtableHandleErrors(data, settings, 'Enrollments');
+    }
+    Logger.log(enrollment);
+  }
 }
 
 /**
