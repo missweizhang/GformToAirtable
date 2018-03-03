@@ -179,12 +179,40 @@ function postToAirtableBase(e, settings) {
   
   // Enrollments table
   if( student && student.hasOwnProperty("id")) {
-    data.Students = student.id;
-    for each( var week in data['Select Week']) {
-      data["Week"] = week;
-      var enrollment = postToAirtableHandleErrors(data, settings, 'Enrollments');
+    data["Students"] = student.id;
+    
+    if (!data.hasOwnProperty('Select Week Original')) {
+      Logger.log("Error: Select week was not recorded.");
+      status = ['error']; // TODO: workaround to get handleable error
+      return;
     }
-    Logger.log(enrollment);
+    
+    var selectWeekCsv = data['Select Week Original'];
+    // TODO: figure data['Select Week'] from the original
+    
+    for each (var week in data['Select Week']) {
+      // extract week selected
+      data["Week"] = week;
+
+      // extract enrollment status
+      var status = null;
+      if (selectWeekCsv.match(new RegExp(week+'[^,]*waitlist[^,]*'))) {
+        status = 'waitlisted'; 
+      }
+      else if (selectWeekCsv.match(new RegExp(week))) {
+        status = 'enrolled'; 
+      }
+      else {
+        // assert: should never get here!
+        Logger.log("Error: something is seriously wrong with the select week logic.");
+        status = ['error']; // TODO: workaround to get handleable error
+      }
+      data["Modifiable Enrollment Status"] = status;
+      
+      // post to Airtable
+      var enrollment = postToAirtableHandleErrors(data, settings, 'Enrollments');
+      Logger.log(enrollment);
+    }
   }
 }
 
