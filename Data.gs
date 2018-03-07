@@ -174,12 +174,28 @@ function postToAirtableBase(e, settings) {
       getValue: getMappedValue,
     }],
   }));
+  
+  // link to Payments table
+  var paymentId = findFirstRecordId({
+    '# Weeks': data['Select Week'].length,
+    'Grade': data['Grade'],
+    "Extended Care": (data['Extended Care'] && data['Extended Care'].match(/Yes/i)) ? true : false,
+  }, settings, 'Payments')//, 84);
+  Logger.log("haha "+paymentId);
+  if (paymentId) { 
+    data["Payment Link"] = [paymentId];
+    Logger.log(paymentId);
+  }
+  
+  // post Student record to Airtable
   var student = postToAirtableHandleErrors(data, settings, 'Students');
   Logger.log(student);
   
   // Enrollments table
   if( student && student.hasOwnProperty("id")) {
+    // link to Students table
     data["Students"] = student.id;
+    data["Student Link"] = [student.id];
     
     if (!data.hasOwnProperty('Select Week Original')) {
       Logger.log("Error: Select week was not recorded.");
@@ -209,7 +225,17 @@ function postToAirtableBase(e, settings) {
       }
       data["Modifiable Enrollment Status"] = status;
       
-      // post to Airtable
+      // link to Classes table
+      var classId = findFirstRecordId({
+        'Week': week,
+        'Grade': data['Grade'],
+      }, settings, 'Classes')// , 42);
+      if (classId) { 
+        data["Class Link"] = [classId];
+        Logger.log(classId);
+      }
+      
+      // post Enrollment record to Airtable
       var enrollment = postToAirtableHandleErrors(data, settings, 'Enrollments');
       Logger.log(enrollment);
     }

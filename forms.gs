@@ -341,3 +341,82 @@ function postToAirtableHandleErrors(dataOrig, settings, tableName) {
   } // tryAgain = false;
   return null;
 }
+
+
+// returns array of records in a table of an airtable base
+function listRecordsFromAirtable(settings, tableName, maxRecords) {
+  tableName = tableName || settings.tableName;
+  maxRecords = maxRecords || 1200;
+  
+  // Airtable API reference:
+  var apiDocUrl = 'https://airtable.com/' +settings.appId+ '/api/docs#curl/table:'+tableName+':create';
+
+  // Make a POST request with a JSON payload.
+  var options = {
+    'muteHttpExceptions': true,
+    'method': 'GET',
+    'headers': {
+      'Authorization': "Bearer " + settings.apiKey, 
+      'Content-Type': 'application/json'
+    },
+  };
+  
+//  "https://api.airtable.com/v0/appDNsN0zARsPT9So/Classes?maxRecords=3&view=Grid%20view"
+  var tableUrl = 'https://api.airtable.com/v0/'+settings.appId+'/'+tableName
+                +'?maxRecords='+maxRecords+'&view=Grid%20view';
+  var response = JSON.parse(UrlFetchApp.fetch(tableUrl, options).getContentText());
+  Logger.log(tableUrl);
+  
+  // success
+  if (response.hasOwnProperty("records")) {
+    return response.records;
+  }
+  
+  // failure
+  if (response.hasOwnProperty("error")) {
+    throw response.error;
+  }
+
+  // failure?
+  return null;
+}
+
+
+// search for all records within a table that matches all specified fields
+// returns array of records if found, null if not found
+function searchRecordsByFields(fields, settings, tableName, maxRecords) {
+  tableName = tableName || settings.tableName;
+  maxRecords = maxRecords || 1200;
+  
+  var records = listRecordsFromAirtable(settings, tableName, maxRecords);
+  if (!records) return null;
+  
+  return records.filter(function(record) {
+    if (!record.hasOwnProperty("fields")) return false;
+    for (key in fields) {
+      if (fields.hasOwnProperty(key)) {
+        // skip if both undefined or false (checkbox)
+        if (!record.fields[key] && !fields[key]) continue; 
+        
+        // mismatch
+        if (record.fields[key] != fields[key]) return false;
+      }
+    }
+    return true; // match
+  });
+}
+
+// search for a record within a table that matches all specified fields
+// returns id of first match, null if not found
+function findFirstRecordId(fields, settings, tableName, maxRecords) {
+  tableName = tableName || settings.tableName;
+  maxRecords = maxRecords || 1200;
+  
+  var records = searchRecordsByFields(fields, settings, tableName, maxRecords);
+  if (!records || records.length == 0 
+               || !records[0].hasOwnProperty("id")) {
+    return null;
+  }
+  
+  return records[0].id;
+}
