@@ -176,16 +176,11 @@ function postToAirtableBase(e, settings) {
   }));
   
   // link to Payments table
-  var paymentId = findFirstRecordId({
+  data["Payment Link"] = createLinkHandleErrors({
     '# Weeks': data['Select Week'].length,
     'Grade': data['Grade'],
     "Extended Care": (data['Extended Care'] && data['Extended Care'].match(/Yes/i)) ? true : false,
-  }, settings, 'Payments')//, 84);
-  Logger.log("haha "+paymentId);
-  if (paymentId) { 
-    data["Payment Link"] = [paymentId];
-    Logger.log(paymentId);
-  }
+  }, data, settings, 'Payments'); //, 84);
   
   // post Student record to Airtable
   var student = postToAirtableHandleErrors(data, settings, 'Students');
@@ -226,14 +221,10 @@ function postToAirtableBase(e, settings) {
       data["Modifiable Enrollment Status"] = status;
       
       // link to Classes table
-      var classId = findFirstRecordId({
+      data["Class Link"] = createLinkHandleErrors({
         'Week': week,
         'Grade': data['Grade'],
-      }, settings, 'Classes')// , 42);
-      if (classId) { 
-        data["Class Link"] = [classId];
-        Logger.log(classId);
-      }
+      }, data, settings, 'Classes')// , 42);
       
       // post Enrollment record to Airtable
       var enrollment = postToAirtableHandleErrors(data, settings, 'Enrollments');

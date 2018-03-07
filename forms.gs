@@ -361,7 +361,6 @@ function listRecordsFromAirtable(settings, tableName, maxRecords) {
     },
   };
   
-//  "https://api.airtable.com/v0/appDNsN0zARsPT9So/Classes?maxRecords=3&view=Grid%20view"
   var tableUrl = 'https://api.airtable.com/v0/'+settings.appId+'/'+tableName
                 +'?maxRecords='+maxRecords+'&view=Grid%20view';
   var response = JSON.parse(UrlFetchApp.fetch(tableUrl, options).getContentText());
@@ -385,10 +384,7 @@ function listRecordsFromAirtable(settings, tableName, maxRecords) {
 // search for all records within a table that matches all specified fields
 // returns array of records if found, null if not found
 function searchRecordsByFields(fields, settings, tableName, maxRecords) {
-  tableName = tableName || settings.tableName;
-  maxRecords = maxRecords || 1200;
-  
-  var records = listRecordsFromAirtable(settings, tableName, maxRecords);
+  var records = listRecordsFromAirtable(settings, tableName, maxRecords);  
   if (!records) return null;
   
   return records.filter(function(record) {
@@ -409,9 +405,6 @@ function searchRecordsByFields(fields, settings, tableName, maxRecords) {
 // search for a record within a table that matches all specified fields
 // returns id of first match, null if not found
 function findFirstRecordId(fields, settings, tableName, maxRecords) {
-  tableName = tableName || settings.tableName;
-  maxRecords = maxRecords || 1200;
-  
   var records = searchRecordsByFields(fields, settings, tableName, maxRecords);
   if (!records || records.length == 0 
                || !records[0].hasOwnProperty("id")) {
@@ -419,4 +412,35 @@ function findFirstRecordId(fields, settings, tableName, maxRecords) {
   }
   
   return records[0].id;
+}
+
+
+// returns value for creating link to a record in another table
+function createLinkHandleErrors(fields, data, settings, tableName, maxRecords) {
+  try {
+    var id = findFirstRecordId(fields, settings, tableName, maxRecords);
+  }
+  catch(error) {
+    if(!error.type || error == "NOT_FOUND" ||        // invalid appId
+       error.type == "AUTHENTICATION_REQUIRED" ||    // invalid apiKey
+       error.type == "INVALID_PERMISSIONS")          // require at least Editor permissions
+    {
+      Logger.log("Error: not enough permissions to search records.  Check that you have read permission.")
+    }
+    else if (error.type == "TABLE_NOT_FOUND") {
+      Logger.log('Error: '+error.type+': '+error.message);
+    }
+    else {
+      Logger.log('Error: '+error.type+': '+error.message);
+    }
+    var errata = data.hasOwnProperty("Notes") ? JSON.parse(data.Notes).errata : [];
+    error.message = "Cannot create link to record in '"+tableName+"': "+error.message;
+    errata.push(error);
+    data["Notes"]=JSON.stringify({
+      errata: errata       // list of fields removed and error messages
+    });
+    return null;
+  }
+
+  return id ? [id] : null;
 }
