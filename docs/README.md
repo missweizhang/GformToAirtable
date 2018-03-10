@@ -1,3 +1,10 @@
+# Contents
+
+   [Dropping and promoting students](#dropping-and-promoting-students)
+
+   [Change weeks selected for a student](#change-weeks)
+   
+   
 # Dropping and Promoting students
 
 Say Jacelyn Lam (5th grade) wanted to drop Week 4, but there is a currently a wailist for the 5th grade - Week 4 class.
@@ -34,6 +41,7 @@ First use Airtable to figure out who should be promoted, then make the changes o
 3. Note changes to enrollment counts in the `classes` tab and ensure changes are also reflected in the `waitlist options` tab.
 4. Open the **formRanger** add-on so that the changes are reflected on **Google Form**.
 5. Cross check with the enrollment counts on Airtable's **Classes** tab.
+
 
 # Change weeks
 
