@@ -76,5 +76,5 @@ Week 1: June 18 - June 22: [6/20] seats left, Week 2, Week 3, Week 4: July 9 - J
    Copy the `Class UID` into the `Class Link` for the rows where a change was made in the **Week** column.
    ![alt-text](airtable_change_weeks.png)
    
-5. Go back to the **Students** tab, on the **Linked Enrollments** view, make sure that changes are reflected in the enrollment status columns for Week 1 through Week 6.
+5. Go back to the **Students** tab, on the **Linked Enrollments** view, make sure that changes are reflected in the enrollment status columns for Week 1 through Week 6.  If rows were added/removed in the Enrollments tab, then go to **Payment** view, unhide and copy the `Payment UID` into `Payment Link` for this student.
 6. Go to the **Classes** tab and make sure enrollment count for 5th grade matches the count on the spreadsheet's `classes` tab.
